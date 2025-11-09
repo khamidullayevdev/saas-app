@@ -22,6 +22,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { subjects } from "@/constants";
 import { Textarea } from "./ui/textarea";
+import { createCompanion } from "@/lib/actions/companion.action";
+import { redirect } from "next/navigation";
+import { useState } from "react";
 
 
 const formSchema = z.object({
@@ -45,14 +48,23 @@ const CompanionForm = () => {
             duration: 15,
         },
     })
+    const [loading, setLoading] = useState(false)
     
-    const onSubmit = (values: z.infer<typeof formSchema>) => {
-        console.log(values)
+    const onSubmit = async (values: z.infer<typeof formSchema>) => {
+        setLoading(true)
+        const companion = await createCompanion(values)
+        
+        if (companion) {
+            redirect(`/companions/${companion.id}`)
+        } else {
+            alert('Failed to create a companion')
+            setLoading(false)
+        }
     }
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form className="space-y-8">
                 <FormField
                     control={form.control}
                     name="name"
@@ -189,13 +201,20 @@ const CompanionForm = () => {
                         <FormItem>
                             <FormLabel>Duration</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder="10" {...field} className="input" />
+                                <Input 
+                                    type="number" 
+                                    placeholder="10" 
+                                    {...field}
+                                    value={field.value?.toString() ?? ''}
+                                    onChange={(e) => field.onChange(Number(e.target.value))}
+                                    className="input" 
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
-                <Button className="w-full cursor-pointer" type="submit">Build Your Companion</Button>
+                <Button onClick={form.handleSubmit(onSubmit)} className="w-full cursor-pointer" type="submit">{loading ? 'Loading...' : 'Build Your Companion'}</Button>
             </form>
         </Form>
     )
